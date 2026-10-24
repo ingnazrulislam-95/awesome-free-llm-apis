@@ -1,124 +1,181 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Free LLM Chat</title>
-<style>
-:root{color-scheme:dark;--bg:#0b1020;--panel:#151e30;--line:#2c3850;--text:#edf2ff;--muted:#9eacc5;--accent:#a5b4fc}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif}
-main{max-width:850px;margin:auto;min-height:100vh;padding:24px 16px;display:flex;flex-direction:column}
-header{display:flex;gap:12px;align-items:center;margin-bottom:20px}
-.logo{background:var(--accent);color:#111827;padding:10px 13px;border-radius:12px;font-weight:800}
-h1{font-size:21px;margin:0}header p{margin:2px 0;color:var(--muted);font-size:13px}
-#status{padding:12px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:13px}
-#chat{flex:1;min-height:300px;padding:20px 0;display:flex;flex-direction:column;gap:14px}
-.msg{padding:13px 15px;border-radius:15px;max-width:90%;white-space:pre-wrap;overflow-wrap:anywhere}
-.user{align-self:flex-end;background:#26385d}
-.assistant{align-self:flex-start;background:var(--panel);border:1px solid var(--line)}
-.label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;margin-bottom:5px}
-form{display:flex;gap:10px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:15px}
-textarea{flex:1;resize:vertical;min-width:0;min-height:46px;max-height:160px;padding:10px;background:transparent;border:0;color:var(--text);font:inherit;outline:none}
-button{border:0;border-radius:10px;padding:12px 16px;background:var(--accent);color:#101629;font-weight:700;cursor:pointer}
-button:disabled{opacity:.6;cursor:wait}
-footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Free AI Chat</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .chat-container {
+      width: 100%;
+      max-width: 650px;
+      background: #1e293b;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 85vh;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      border: 1px solid #334155;
+    }
+    .chat-header {
+      padding: 16px;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      font-weight: 600;
+      font-size: 16px;
+      text-align: center;
+    }
+    .chat-box {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .message {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      line-height: 1.5;
+      font-size: 15px;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .user {
+      background: #2563eb;
+      align-self: flex-end;
+      color: white;
+    }
+    .assistant {
+      background: #334155;
+      align-self: flex-start;
+      color: #f1f5f9;
+    }
+    .error {
+      background: #991b1b;
+      align-self: center;
+      color: #fecaca;
+      font-size: 13px;
+    }
+    .input-row {
+      display: flex;
+      padding: 12px;
+      background: #0f172a;
+      border-top: 1px solid #334155;
+      gap: 8px;
+    }
+    input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #1e293b;
+      color: white;
+      outline: none;
+      font-size: 15px;
+    }
+    input:focus {
+      border-color: #3b82f6;
+    }
+    button {
+      padding: 12px 20px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    button:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
 <body>
-<main>
-<header>
-  <div class="logo">AI</div>
-  <div><h1>Free LLM Chat</h1><p>A simple AI assistant for your questions</p></div>
-</header>
-<div id="status">Connecting setup…</div>
-<section id="chat" aria-live="polite">
-  <div class="msg assistant"><span class="label">Assistant</span>Hello! Ask me a question to get started.</div>
-</section>
-<form id="form">
-  <textarea id="prompt" maxlength="4000" rows="1"
-    placeholder="Ask your question…" aria-label="Your message" required></textarea>
-  <button id="send" type="submit">Send ↗</button>
-</form>
-<footer>AI can make mistakes. Do not enter passwords, confidential company data, or sensitive personal information.</footer>
-</main>
+
+<div class="chat-container">
+  <div class="chat-header">AI Assistant</div>
+  <div class="chat-box" id="chatBox">
+    <div class="message assistant">Hello! Type a message below to start chatting.</div>
+  </div>
+  <form class="input-row" id="chatForm">
+    <input type="text" id="userInput" placeholder="Type your message..." autocomplete="off" required />
+    <button type="submit" id="sendBtn">Send</button>
+  </form>
+</div>
+
 <script>
-const API_URL = "my-llm-chat-api.ing-nazrul-islam.workers.dev
-";
-const form = document.getElementById("form");
-const promptBox = document.getElementById("prompt");
-const sendButton = document.getElementById("send");
-const chat = document.getElementById("chat");
-const statusBox = document.getElementById("status");
-const history = [];
+  const WORKER_URL = "https://my-llm-chat-api.ing-nazrul-islam.workers.dev/";
+  const chatBox = document.getElementById("chatBox");
+  const chatForm = document.getElementById("chatForm");
+  const userInput = document.getElementById("userInput");
+  const sendBtn = document.getElementById("sendBtn");
 
-if (API_URL.startsWith("https://")) {
-  statusBox.textContent = "Ready to chat. Your messages are sent to the configured AI backend.";
-} else {
-  statusBox.textContent = "Setup needed: deploy the backend and replace API_URL in this file.";
-}
+  const conversation = [];
 
-function addMessage(role, text) {
-  const el = document.createElement("div");
-  el.className = "msg " + role;
-  const label = document.createElement("span");
-  label.className = "label";
-  label.textContent = role === "user" ? "You" : "Assistant";
-  const body = document.createElement("div");
-  body.textContent = text;
-  el.append(label, body);
-  chat.appendChild(el);
-  el.scrollIntoView({behavior:"smooth",block:"nearest"});
-  return body;
-}
-
-form.addEventListener("submit", async event => {
-  event.preventDefault();
-  const text = promptBox.value.trim();
-  if (!text || sendButton.disabled) return;
-
-  if (!API_URL.startsWith("https://")) {
-    statusBox.textContent = "Backend not configured yet. Follow Step 2 below.";
-    return;
+  function appendMessage(role, text) {
+    const msg = document.createElement("div");
+    msg.className = `message ${role}`;
+    msg.textContent = text;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return msg;
   }
 
-  addMessage("user", text);
-  history.push({role:"user",content:text});
-  promptBox.value = "";
-  sendButton.disabled = true;
-  sendButton.textContent = "Thinking…";
-  const answer = addMessage("assistant", "Thinking…");
+  chatForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = userInput.value.trim();
+    if (!text) return;
 
-  try {
-    const response = await fetch(API_URL, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({messages:history.slice(-20)})
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "HTTP " + response.status);
-    if (typeof data.reply !== "string") throw new Error("No reply returned");
-    answer.textContent = data.reply;
-    history.push({role:"assistant",content:data.reply});
-    statusBox.textContent = "Connected";
-  } catch (err) {
-    answer.textContent = "Sorry, the request failed: " + err.message;
-    history.pop();
-    statusBox.textContent = "Connection failed. Check the backend URL and its settings.";
-  } finally {
-    sendButton.disabled = false;
-    sendButton.textContent = "Send ↗";
-    promptBox.focus();
-  }
-});
+    appendMessage("user", text);
+    conversation.push({ role: "user", content: text });
+    userInput.value = "";
 
-promptBox.addEventListener("keydown", event => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    form.requestSubmit();
-  }
-});
+    sendBtn.disabled = true;
+    const loadingMsg = appendMessage("assistant", "Thinking...");
+
+    try {
+      const response = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: conversation })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Server error: ${response.status}`);
+      }
+
+      loadingMsg.textContent = data.reply;
+      conversation.push({ role: "assistant", content: data.reply });
+    } catch (err) {
+      loadingMsg.className = "message error";
+      loadingMsg.textContent = `Error: ${err.message}`;
+    } finally {
+      sendBtn.disabled = false;
+      userInput.focus();
+    }
+  });
 </script>
+
 </body>
 </html>
