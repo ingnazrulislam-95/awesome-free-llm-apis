@@ -1,0 +1,123 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free LLM Chat</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#151e30;--line:#2c3850;--text:#edf2ff;--muted:#9eacc5;--accent:#a5b4fc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif}
+main{max-width:850px;margin:auto;min-height:100vh;padding:24px 16px;display:flex;flex-direction:column}
+header{display:flex;gap:12px;align-items:center;margin-bottom:20px}
+.logo{background:var(--accent);color:#111827;padding:10px 13px;border-radius:12px;font-weight:800}
+h1{font-size:21px;margin:0}header p{margin:2px 0;color:var(--muted);font-size:13px}
+#status{padding:12px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:13px}
+#chat{flex:1;min-height:300px;padding:20px 0;display:flex;flex-direction:column;gap:14px}
+.msg{padding:13px 15px;border-radius:15px;max-width:90%;white-space:pre-wrap;overflow-wrap:anywhere}
+.user{align-self:flex-end;background:#26385d}
+.assistant{align-self:flex-start;background:var(--panel);border:1px solid var(--line)}
+.label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;margin-bottom:5px}
+form{display:flex;gap:10px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:15px}
+textarea{flex:1;resize:vertical;min-width:0;min-height:46px;max-height:160px;padding:10px;background:transparent;border:0;color:var(--text);font:inherit;outline:none}
+button{border:0;border-radius:10px;padding:12px 16px;background:var(--accent);color:#101629;font-weight:700;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="logo">AI</div>
+  <div><h1>Free LLM Chat</h1><p>A simple AI assistant for your questions</p></div>
+</header>
+<div id="status">Connecting setup…</div>
+<section id="chat" aria-live="polite">
+  <div class="msg assistant"><span class="label">Assistant</span>Hello! Ask me a question to get started.</div>
+</section>
+<form id="form">
+  <textarea id="prompt" maxlength="4000" rows="1"
+    placeholder="Ask your question…" aria-label="Your message" required></textarea>
+  <button id="send" type="submit">Send ↗</button>
+</form>
+<footer>AI can make mistakes. Do not enter passwords, confidential company data, or sensitive personal information.</footer>
+</main>
+<script>
+const API_URL = "PASTE_YOUR_CLOUDFLARE_WORKER_URL_HERE";
+const form = document.getElementById("form");
+const promptBox = document.getElementById("prompt");
+const sendButton = document.getElementById("send");
+const chat = document.getElementById("chat");
+const statusBox = document.getElementById("status");
+const history = [];
+
+if (API_URL.startsWith("https://")) {
+  statusBox.textContent = "Ready to chat. Your messages are sent to the configured AI backend.";
+} else {
+  statusBox.textContent = "Setup needed: deploy the backend and replace API_URL in this file.";
+}
+
+function addMessage(role, text) {
+  const el = document.createElement("div");
+  el.className = "msg " + role;
+  const label = document.createElement("span");
+  label.className = "label";
+  label.textContent = role === "user" ? "You" : "Assistant";
+  const body = document.createElement("div");
+  body.textContent = text;
+  el.append(label, body);
+  chat.appendChild(el);
+  el.scrollIntoView({behavior:"smooth",block:"nearest"});
+  return body;
+}
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
+  const text = promptBox.value.trim();
+  if (!text || sendButton.disabled) return;
+
+  if (!API_URL.startsWith("https://")) {
+    statusBox.textContent = "Backend not configured yet. Follow Step 2 below.";
+    return;
+  }
+
+  addMessage("user", text);
+  history.push({role:"user",content:text});
+  promptBox.value = "";
+  sendButton.disabled = true;
+  sendButton.textContent = "Thinking…";
+  const answer = addMessage("assistant", "Thinking…");
+
+  try {
+    const response = await fetch(API_URL, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({messages:history.slice(-20)})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "HTTP " + response.status);
+    if (typeof data.reply !== "string") throw new Error("No reply returned");
+    answer.textContent = data.reply;
+    history.push({role:"assistant",content:data.reply});
+    statusBox.textContent = "Connected";
+  } catch (err) {
+    answer.textContent = "Sorry, the request failed: " + err.message;
+    history.pop();
+    statusBox.textContent = "Connection failed. Check the backend URL and its settings.";
+  } finally {
+    sendButton.disabled = false;
+    sendButton.textContent = "Send ↗";
+    promptBox.focus();
+  }
+});
+
+promptBox.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    form.requestSubmit();
+  }
+});
+</script>
+</body>
+</html>
